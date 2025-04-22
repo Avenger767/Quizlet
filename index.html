@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Sim Tech Training Guide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #f0f4f8, #d9e2ec);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .hidden { display: none; }
+    .correct { color: green; font-weight: bold; }
+    .incorrect { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container" id="start">
+    <h1>The Sim Tech Training Guide</h1>
+    <p>Enter your name to begin:</p>
+    <input id="username" placeholder="Your name" style="width:100%; padding:10px; font-size:16px;">
+    <button onclick="goToModule()">Continue</button>
+  </div>
+
+  <div class="container hidden" id="modulePage">
+    <h2>Training Module: TBD</h2>
+    <p>This module is under construction.</p>
+    <button onclick="startInterfaceQuiz()">Start Interface Quiz</button>
+  </div>
+
+  <div class="container hidden" id="interfaceQuiz"></div>
+  <div class="container hidden" id="motionQuiz"></div>
+  <div class="container hidden" id="summaryPage">
+    <h2>Training Summary</h2>
+    <p>Thank you, <span id="summaryUser"></span>!</p>
+    <p>Your total score: <span id="summaryScore"></span></p>
+    <button onclick="window.location.reload()">Restart</button>
+  </div>
+
+  <script>
+    const userKey = 'quizUser';
+    const interfaceQuiz = [
+      {
+        q: "What is the primary function of the MPIC system in a simulator?",
+        a: 0, options: [
+          "Interface cockpit hardware with simulation software",
+          "Control simulator temperature",
+          "Provide power to the instructor station",
+          "Store pilot profiles"
+        ]
+      },
+      {
+        q: "All MPICs share the same power supply within a chassis?",
+        a: 0, options: ["True", "False"]
+      }
+    ];
+
+    const motionQuiz = [
+      {
+        q: "What happens if you remove the EtherCAT secros cable at a drive?",
+        a: 2,
+        options: ["The GUI freezes", "Nothing changes", "A communication fault occurs", "The system powers off"]
+      }
+    ];
+
+    function goToModule() {
+      const name = document.getElementById('username').value.trim();
+      if (!name) return alert("Please enter your name.");
+      localStorage.setItem(userKey, name);
+      document.getElementById('start').classList.add('hidden');
+      document.getElementById('modulePage').classList.remove('hidden');
+    }
+
+    function startInterfaceQuiz() {
+      document.getElementById('modulePage').classList.add('hidden');
+      renderQuiz("interfaceQuiz", interfaceQuiz, (score) => {
+        localStorage.setItem("interfaceScore", score);
+        localStorage.setItem("interfaceTotal", interfaceQuiz.length);
+        document.getElementById("interfaceQuiz").classList.add("hidden");
+        renderQuiz("motionQuiz", motionQuiz, finishAll);
+      });
+    }
+
+    function renderQuiz(id, questions, onSubmit) {
+      const box = document.getElementById(id);
+      box.innerHTML = `<h2>${id === 'interfaceQuiz' ? 'Interface Quiz' : 'Motion Quiz'}</h2>`;
+      questions.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.innerHTML = `<p><strong>${i + 1}. ${q.q}</strong></p>` +
+          q.options.map((opt, j) =>
+            `<label><input type="radio" name="q${i}" value="${j}"> ${opt}</label>`
+          ).join("");
+        box.appendChild(div);
+      });
+      const btn = document.createElement("button");
+      btn.textContent = "Submit Quiz";
+      btn.onclick = () => {
+        let score = 0;
+        questions.forEach((q, i) => {
+          const selected = [...document.querySelectorAll(`[name='q${i}']:checked`)];
+          selected.forEach(el => {
+            const isCorrect = el.value == q.a;
+            const label = el.parentElement;
+            if (isCorrect) {
+              label.classList.add("correct");
+              score++;
+            } else {
+              label.classList.add("incorrect");
+            }
+          });
+        });
+        onSubmit(score);
+      };
+      box.appendChild(btn);
+      box.classList.remove("hidden");
+    }
+
+    function finishAll(motionScore) {
+      const motionTotal = motionQuiz.length;
+      localStorage.setItem("motionScore", motionScore);
+      localStorage.setItem("motionTotal", motionTotal);
+
+      const name = localStorage.getItem(userKey) || "User";
+      const totalScore = (parseInt(localStorage.getItem('interfaceScore')) || 0) + motionScore;
+      const totalTotal = (parseInt(localStorage.getItem('interfaceTotal')) || 0) + motionTotal;
+
+      document.getElementById("motionQuiz").classList.add("hidden");
+      document.getElementById("summaryUser").textContent = name;
+      document.getElementById("summaryScore").textContent = `${totalScore} / ${totalTotal}`;
+      document.getElementById("summaryPage").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
