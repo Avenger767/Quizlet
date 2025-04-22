@@ -1,1 +1,0 @@
-export default function ModulePage() { return <div>Training Module TBD <button onClick={() => window.location.href='/interface-quiz'}>Start Interface Quiz</button></div>; }
